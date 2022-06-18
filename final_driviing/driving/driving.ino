@@ -34,7 +34,7 @@ bool ir_left;
 int state = 0;
 
 // 자동차 튜닝 파라미터 =====================================================================
-int detect_ir = 27; // 검출선이 흰색과 검정색 비교
+int detect_ir = 28; // 검출선이 흰색과 검정색 비교
 
 
 int punch_pwm = 200; // 정지 마찰력 극복 출력 (0 ~ 255)
@@ -198,22 +198,38 @@ void SetSensor(){
 // state값 리턴
 // ex) 적외선 left, right 다 false면 직진이니까 직진에 해당하는 state 반환
 void SetState(){
-    state = 0
+    state = 0;
+
+    //직진(차선 검출 X)
+    if(ir_sensing(IR_L)==false && ir_sensing(IR_R)==false){
+        state=0;
+    }
+    //좌회전(오른쪽 차선 검출)
+    else if(ir_sensing(IR_L)==false && ir_sensing(IR_R)==true){
+        state=1;
+    }
+    //우회전(왼쪽 차선 검출)
+    else if(ir_sensing(IR_L)==true && ir_sensing(IR_R)==false){
+        state=2;
+    }
 }
 
 // 직진에 해당하게끔 스티어링이랑 속도 조정
 void Straight(){
-
-}
-
-// 우회전
-void RightTurn(){
-
+    compute_steering = 0;
+    compute_speed = 0.8;
 }
 
 // 좌회전
 void LeftTurn(){
+    compute_steering = -1;
+    compute_speed = 0.5;
+}
 
+// 우회전
+void RightTurn(){
+    compute_steering = 1;
+    compute_speed = 0.5;
 }
 
 // 오른쪽 장애물
@@ -255,28 +271,10 @@ void driving() {
         break;
     }
 
-
+    SetSpeed(compute_speed);
+    SetSteering(compute_steering);
 }
 
-void straight() { // 기본주행    
-    if (ir_sensing(IR_R) == false && ir_sensing(IR_L) == false ) {  //차선이 검출되지 않을 경우 직진
-        compute_steering = 0;
-        compute_speed = 0.5;
-//        Serial.print("straight\n");
-    }
-
-  else if (ir_sensing(IR_R) == true && ir_sensing(IR_L) == false) { // 오른쪽 차선이 검출된 경우
-        compute_steering = -1;
-        compute_speed = 0.1;
-//        Serial.print("left\n");
-    }
-
-  else if (ir_sensing(IR_L) == true && ir_sensing(IR_R) == false ) { //왼쪽 차선이 검출된 경우 
-        compute_steering = 1;
-        compute_speed = 0.1;
-//        Serial.print("right\n");
-    }
-}
 
 void setup() {
 
