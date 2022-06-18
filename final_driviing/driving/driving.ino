@@ -34,7 +34,7 @@ bool ir_left;
 int state = 0;
 
 // 자동차 튜닝 파라미터 =====================================================================
-int detect_ir = 28; // 검출선이 흰색과 검정색 비교
+int detect_ir = 26; // 검출선이 흰색과 검정색 비교
 
 
 int punch_pwm = 200; // 정지 마찰력 극복 출력 (0 ~ 255)
@@ -200,8 +200,13 @@ void SetSensor(){
 void SetState(){
     state = 0;
 
+    //정지(양쪽 차선 검출)
+    if(ir_sensing(IR_L)==true && ir_sensing(IR_R)==true){
+        state=3;
+    }
+
     //직진(차선 검출 X)
-    if(ir_sensing(IR_L)==false && ir_sensing(IR_R)==false){
+    if(     (IR_L)==false && ir_sensing(IR_R)==false){
         state=0;
     }
     //좌회전(오른쪽 차선 검출)
@@ -217,19 +222,32 @@ void SetState(){
 // 직진에 해당하게끔 스티어링이랑 속도 조정
 void Straight(){
     compute_steering = 0;
-    compute_speed = 0.8;
+    compute_speed = 1;
 }
 
 // 좌회전
 void LeftTurn(){
     compute_steering = -1;
-    compute_speed = 0.5;
+    compute_speed = 0.8;
 }
 
 // 우회전
 void RightTurn(){
     compute_steering = 1;
-    compute_speed = 0.5;
+    compute_speed = 0.8;
+}
+
+void StopLine(){
+    compute_steering = 0;
+    compute_speed = 0;
+    SetSpeed(compute_speed);
+    SetSteering(compute_steering);
+    delay(3000);
+    compute_steering = 0;
+    compute_speed = 1;
+    SetSpeed(compute_speed);
+    SetSteering(compute_steering);
+    delay(200);
 }
 
 // 오른쪽 장애물
@@ -268,6 +286,9 @@ void driving() {
         break;
     case 2:
         RightTurn();
+        break;
+    case 3:
+        StopLine();
         break;
     }
 
