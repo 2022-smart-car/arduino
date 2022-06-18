@@ -75,7 +75,10 @@ float GetDistance(int trig, int echo)
 }
 
 bool ir_sensing(int pin) {
-    return analogRead(pin);
+    if(analogRead(pin)>detect_ir)
+      return false;
+    else
+      return true;
 }
 
 // 앞바퀴 조향
@@ -89,6 +92,7 @@ void SetSteering(float steering)
 
     servoAngle = constrain(servoAngle, 0, 180);
     servo.write(servoAngle);
+    delay(20);
 }
 
 
@@ -170,6 +174,11 @@ void SetSpeed(float speed)
 }
 
 void driving() {
+//    float a = 0.1;
+//    for(int i = 0; i < 10; i++){
+//        SetSteering(i*a);
+//        delay(15);
+//    }
     compute_steering = cur_steering;
     compute_speed = cur_speed;
 
@@ -192,22 +201,26 @@ void driving() {
     }
     SetSpeed(compute_speed);
     SetSteering(compute_steering);
+//    delay(300);
 }
 
-void straight() { // 기본주행
-    if (ir_sensing(IR_R) >= detect_ir && ir_sensing(IR_L) >= detect_ir ) {  //차선이 검출되지 않을 경우 직진
+void straight() { // 기본주행    
+    if (ir_sensing(IR_R) == false && ir_sensing(IR_L) == false ) {  //차선이 검출되지 않을 경우 직진
         compute_steering = 0;
-        compute_speed = 1;
+        compute_speed = 0.5;
+//        Serial.print("straight\n");
     }
 
-    else if (ir_sensing(IR_R) <= detect_ir) { // 오른쪽 차선이 검출된 경우
+  else if (ir_sensing(IR_R) == true && ir_sensing(IR_L) == false) { // 오른쪽 차선이 검출된 경우
         compute_steering = -1;
         compute_speed = 0.1;
+//        Serial.print("left\n");
     }
 
-    else if (ir_sensing(IR_L) <= detect_ir) { //왼쪽 차선이 검출된 경우
+  else if (ir_sensing(IR_L) == true && ir_sensing(IR_R) == false ) { //왼쪽 차선이 검출된 경우 
         compute_steering = 1;
         compute_speed = 0.1;
+//        Serial.print("right\n");
     }
 }
 

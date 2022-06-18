@@ -274,33 +274,33 @@ void straight() { // 기본주행
   if (ir_sensing(IR_R) >= detect_ir && ir_sensing(IR_L) >= detect_ir ) {  //차선이 검출되지 않을 경우 직진
 
     compute_steering = 0;
-    compute_speed = 0.05;
+    compute_speed = 1;
   }
 
   else if (ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) >= detect_ir) { // 오른쪽 차선이 검출된 경우
     compute_steering = 0;
-    compute_speed=-0.1;
+    compute_speed=-0.15;
     SetSpeed(compute_speed);
     SetSteering(compute_steering);
-    delay(300);
+    delay(200);
     compute_steering = -1;
-    compute_speed = 0.05;
+    compute_speed = 0.8;
     SetSpeed(compute_speed);
     SetSteering(compute_steering);
-    delay(800);
+    delay(200);
   }
 
   else if (ir_sensing(IR_L) <= detect_ir && ir_sensing(IR_R) >= detect_ir) { //왼쪽 차선이 검출된 경우 
     compute_steering = 0;
-    compute_speed=-0.1;
+    compute_speed=-0.15;
     SetSpeed(compute_speed);
     SetSteering(compute_steering);
-    delay(300);
+    delay(200);
     compute_steering = 1;
-    compute_speed = 0.05;
+    compute_speed = 0.8;
     SetSpeed(compute_speed);
     SetSteering(compute_steering);
-    delay(800);
+    delay(200);
   }
 
 /*
