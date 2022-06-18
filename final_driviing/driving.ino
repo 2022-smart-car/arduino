@@ -197,7 +197,7 @@ void SetSensor(){
 // 센서의 값에 따라서
 // state값 리턴
 // ex) 적외선 left, right 다 false면 직진이니까 직진에 해당하는 state 반환
-void SetState(bool ir_left, bool ir_right, float uw_left, float uw_right, float uw_front){
+void SetState(){
     state = 0
 }
 
