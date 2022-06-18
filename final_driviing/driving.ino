@@ -172,35 +172,80 @@ void SetSpeed(float speed)
     cur_speed = speed;
 }
 
+
+////////////////////////////////////////////////
+// 각 state별로 함수로 분리                       //
+// 각 함수에 필요한 센서 파라미터 추가할 것!           //
+// state가 추가되면 함수도 추가할 것!               //
+///////////////////////////////////////////////
+
+
+// 센서의 값에 따라서
+// state값 리턴
+// ex) 적외선 left, right 다 false면 직진이니까 직진에 해당하는 state 반환
+int SetState(bool ir_left, bool ir_right, float uw_left, float uw_right, float uw_front){
+    return 0
+}
+
+// 직진에 해당하게끔 스티어링이랑 속도 조정
+void Straight(){
+
+}
+
+// 우회전
+void RightTurn(){
+
+}
+
+// 좌회전
+void LeftTurn(){
+
+}
+
+// 오른쪽 장애물
+void RightObstacle(){
+
+}
+
+// 왼쪽 장애물
+void LeftObstacle(){
+
+}
+
+
+// 전방 장애물
+void FrontObstacle(){
+
+}
+
 void driving() {
-//    float a = 0.1;
-//    for(int i = 0; i < 10; i++){
-//        SetSteering(i*a);
-//        delay(15);
-//    }
-    compute_steering = cur_steering;
-    compute_speed = cur_speed;
 
-    center = GetDistance(FC_TRIG, FC_ECHO);
-    left = GetDistance(L_TRIG, L_ECHO);
-    right = GetDistance(R_TRIG, R_ECHO);
+    // 한 번의 루프마다 각각 센서값 받아오기
+    float uw_center = GetDistance(FC_TRIG, FC_ECHO);
+    float uw_left = GetDistance(L_TRIG, L_ECHO);
+    float uw_right = GetDistance(R_TRIG, R_ECHO);
+    bool ir_left = ir_sensing(IR_L);
+    bool ir_right = ir_sensing(IR_R);
 
-    if (state == 0) {
-        straight();
-        /* 예시
-            if (ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir) { //양쪽 차선이 검출된 경우
-             state = 2;
-            }
-            if (left <= side_detect && right <= side_detect) {
-             state = 1;
-            }
-            if (center <= center_detect) {
-             state = 3;
-            }*/
+    // 받아온 센서값을 바탕으로 이번 루프의 state결정
+    state = SetState(ir_left, ir_right, uw_left, uw_right, uw_center);
+
+    // case별로 분기 추가하기!
+    // case 별로 상수 DEFINE 해서 숫자 없애기!
+    switch (state)
+    {
+    case 0:
+        Straight();
+        break;
+    case 1:
+        LeftTurn();
+        break;
+    case 2:
+        RightTurn();
+        break;
     }
-    SetSpeed(compute_speed);
-    SetSteering(compute_steering);
-//    delay(300);
+
+
 }
 
 void straight() { // 기본주행    
