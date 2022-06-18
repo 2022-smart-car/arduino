@@ -206,7 +206,7 @@ void SetState(){
     }
 
     //직진(차선 검출 X)
-    if(     (IR_L)==false && ir_sensing(IR_R)==false){
+    if(ir_sensing(IR_L)==false && ir_sensing(IR_R)==false){
         state=0;
     }
     //좌회전(오른쪽 차선 검출)
