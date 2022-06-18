@@ -22,9 +22,14 @@ const int R_ECHO = A5;  // 우측 초음파 센서 ECHO 핀
 
 const int MAX_DISTANCE = 2000; // 초음파 센서의 최대 감지거리
 
-float front;
-float left;
-float right;
+
+// 센서값 전역변수
+float uw_front;
+float uw_left;
+float uw_right;
+bool ir_right;
+bool ir_left;
+
 
 int state = 0;
 
@@ -180,11 +185,20 @@ void SetSpeed(float speed)
 ///////////////////////////////////////////////
 
 
+//센서값 설정
+void SetSensor(){
+    uw_front = GetDistance(FC_TRIG, FC_ECHO);
+    uw_left = GetDistance(L_TRIG, L_ECHO);
+    uw_right = GetDistance(R_TRIG, R_ECHO);
+    ir_left = ir_sensing(IR_L);
+    ir_right = ir_sensing(IR_R);
+}
+
 // 센서의 값에 따라서
 // state값 리턴
 // ex) 적외선 left, right 다 false면 직진이니까 직진에 해당하는 state 반환
-int SetState(bool ir_left, bool ir_right, float uw_left, float uw_right, float uw_front){
-    return 0;
+void SetState(bool ir_left, bool ir_right, float uw_left, float uw_right, float uw_front){
+    state = 0
 }
 
 // 직진에 해당하게끔 스티어링이랑 속도 조정
@@ -220,15 +234,11 @@ void FrontObstacle(){
 
 void driving() {
 
-    // 한 번의 루프마다 각각 센서값 받아오기
-    float uw_front = GetDistance(FC_TRIG, FC_ECHO);
-    float uw_left = GetDistance(L_TRIG, L_ECHO);
-    float uw_right = GetDistance(R_TRIG, R_ECHO);
-    bool ir_left = ir_sensing(IR_L);
-    bool ir_right = ir_sensing(IR_R);
+    // 한 번의 루프마다 각각 센서값 설정
+    SetSensor();
 
     // 받아온 센서값을 바탕으로 이번 루프의 state결정
-    state = SetState(ir_left, ir_right, uw_left, uw_right, uw_front);
+    SetState();
 
     // case별로 분기 추가하기!
     // case 별로 상수 DEFINE 해서 숫자 없애기!
