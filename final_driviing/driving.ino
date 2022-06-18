@@ -184,7 +184,7 @@ void SetSpeed(float speed)
 // state값 리턴
 // ex) 적외선 left, right 다 false면 직진이니까 직진에 해당하는 state 반환
 int SetState(bool ir_left, bool ir_right, float uw_left, float uw_right, float uw_front){
-    return 0
+    return 0;
 }
 
 // 직진에 해당하게끔 스티어링이랑 속도 조정
