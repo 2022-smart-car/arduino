@@ -1,19 +1,17 @@
 #include <Servo.h>
-// #include <ArduinoSTL.h>
-// #include <vector>
+#include <ArduinoSTL.h>
+#include <deque>
 
-// using namespace std;
+using namespace std;
 
 Servo servo;
 
 // 노이즈 방지를 위한 센서값 평균을 측정하기 위한 변수와 배열
 
-// vector<float> uw_front_arr(2000, 5);
-// vector<float> uw_left_arr(2000, 5);
-// vector<float> uw_right_arr(2000, 5);
-int ir_count = 0;
-
-
+deque<float> front_queue;
+deque<float> left_queue;
+deque<float> right_queue;
+int steering_degree = 0;
 
 
 const int SERVO1_PIN = 9;      // 서보모터1 연결핀
@@ -35,7 +33,7 @@ const int L_ECHO = A1;  // 좌측 초음파 센서 ECHO 핀
 const int R_TRIG = 2;   // 우측 초음파 센서 TRIG 핀
 const int R_ECHO = A5;  // 우측 초음파 센서 ECHO 핀
 
-const int MAX_DISTANCE = 2000; // 초음파 센서의 최대 감지거리
+const int MAX_DISTANCE = 300; // 초음파 센서의 최대 감지거리
 
 
 // 센서값 전역변수
@@ -91,6 +89,45 @@ float GetDistance(int trig, int echo)
         return MAX_DISTANCE;
     else
         return duration * 0.17;     // 음속 340m/s
+}
+
+float QueueSum(deque<float> Q){
+    float sum = 0;
+    for(float num : Q){
+        sum += num;
+    }
+    return sum;
+}
+
+// 이전 5프레임의 초음파센서값을 평균내서 반환한다
+float GetFrontDistance(float current){
+    if(front_queue.size() < 3){
+        front_queue.push_back(current);
+        return QueueSum(front_queue) / front_queue.size();
+    }
+    front_queue.push_back(current);
+    front_queue.pop_front();
+    return QueueSum(front_queue) / 3;
+}
+
+float GetLeftDistance(float current){
+    if(left_queue.size() < 3){
+        left_queue.push_back(current);
+        return QueueSum(left_queue) / left_queue.size();
+    }
+    left_queue.push_back(current);
+    left_queue.pop_front();
+    return QueueSum(left_queue) / 3;
+}
+
+float GetRightDistance(float current){
+    if(right_queue.size() < 3){
+        right_queue.push_back(current);
+        return QueueSum(right_queue) / right_queue.size();
+    }
+    right_queue.push_back(current);
+    right_queue.pop_front();
+    return QueueSum(right_queue) / 3;
 }
 
 bool ir_sensing(int pin) {
@@ -202,47 +239,43 @@ void SetSpeed(float speed)
 
 //센서값 설정
 void SetSensor(){
-    uw_front = GetDistance(FC_TRIG, FC_ECHO);
-    uw_left = GetDistance(L_TRIG, L_ECHO);
-    uw_right = GetDistance(R_TRIG, R_ECHO);
+
+    uw_front = GetFrontDistance(GetDistance(FC_TRIG, FC_ECHO));
+    uw_left = GetLeftDistance(GetDistance(L_TRIG, L_ECHO));
+    uw_right = GetRightDistance(GetDistance(R_TRIG, R_ECHO));
     ir_left = ir_sensing(IR_L);
     ir_right = ir_sensing(IR_R);
 
-    Serial.print("left: ");
-    Serial.print(uw_left);
-    Serial.print("  right: ");
-    Serial.print(uw_right);
-    Serial.print("  front: ");
-    Serial.println(uw_front);
+    // 디버깅용 프린트
+    // Serial.print("left: ");
+    // Serial.print(uw_left);
+    // Serial.print("  right: ");
+    // Serial.print(uw_right);
     
-
-    // 부드러운 회전 & 노이즈 제거를 위한 코드
-    if(ir_left){
-        ir_count = constrain(ir_count+1, -5, 5);
-    }
-    if(ir_right){
-        ir_count = constrain(ir_count-1, -5, 5);
-    }
-    if(!ir_left && !ir_right){
-        if(ir_count < 0){
-            ir_count++;
-        }
-        else if(ir_count > 0){
-            ir_count--;
-        }
-    }
-
+    Serial.print("  front: ");
+    Serial.println(GetDistance(FC_TRIG, FC_ECHO));
     
 }
 
 // 센서의 값에 따라서
 // state값 리턴
 // ex) 적외선 left, right 다 false면 직진이니까 직진에 해당하는 state 반환
+
+
+//////////////////////////////////////////////////////////////
+// uw 센서값 범위                                              //
+// left, right 도로 정중앙 기준 양옆 차선까지는 약 65~90정도 측정됨    //
+// front 블럭 정중앙 기준 앞 블록까지 약 50정도 측정                 //
+//////////////////////////////////////////////////////////////
+
 void SetState(){
     state = 0;
 
+    if(uw_front < 230){
+        state = 3;
+    }
     //직진(차선 검출 X)
-    if(ir_left==false && ir_right==false){
+    else if(ir_left==false && ir_right==false){
         state=0;
     }
     //좌회전(오른쪽 차선 검출)
@@ -253,25 +286,36 @@ void SetState(){
     else if(ir_left==true && ir_right==false){
         state=2;
     }
+
+
 }
 
 // 직진에 해당하게끔 스티어링이랑 속도 조정
 void Straight(){
-    compute_steering = ir_count / 5.0;
+    if(steering_degree < 0){
+        steering_degree++;
+    }
+    else if(steering_degree > 0){
+        steering_degree--;
+    }
+    compute_steering = steering_degree / 5.0;
     compute_speed = 1;
 }
 
 // 좌회전
 void LeftTurn(){
-    compute_steering = ir_count / 5.0;
+    steering_degree = constrain(steering_degree-1, -5, 5);
+    compute_steering = steering_degree / 5.0;
     compute_speed = 0.7;
 }
 
 // 우회전
 void RightTurn(){
-    compute_steering = ir_count / 5.0;
+    steering_degree = constrain(steering_degree+1, -5, 5);
+    compute_steering = steering_degree / 5.0;
     compute_speed = 0.7;
 }
+
 
 // 오른쪽 장애물
 void RightObstacle(){
@@ -285,8 +329,15 @@ void LeftObstacle(){
 
 
 // 전방 장애물
+// 일단 왼쪽으로 회전
 void FrontObstacle(){
-
+    while(GetRightDistance(GetDistance(R_TRIG, R_ECHO)) > 100 && !ir_sensing(IR_R)){
+        SetSpeed(0.4);
+        SetSteering(-1);
+    }
+    compute_speed = 0.4;
+    compute_steering = -1;
+    steering_degree = -1;
 }
 
 void driving() {
@@ -310,10 +361,13 @@ void driving() {
     case 2:
         RightTurn();
         break;
+    case 3:
+        FrontObstacle();
+        break;
     }
 
-    // SetSpeed(compute_speed);
-    // SetSteering(compute_steering);
+    SetSpeed(compute_speed);
+    SetSteering(compute_steering);
 }
 
 
