@@ -1,5 +1,20 @@
 #include <Servo.h>
+// #include <ArduinoSTL.h>
+// #include <vector>
+
+// using namespace std;
+
 Servo servo;
+
+// 노이즈 방지를 위한 센서값 평균을 측정하기 위한 변수와 배열
+
+// vector<float> uw_front_arr(2000, 5);
+// vector<float> uw_left_arr(2000, 5);
+// vector<float> uw_right_arr(2000, 5);
+int ir_count = 0;
+
+
+
 
 const int SERVO1_PIN = 9;      // 서보모터1 연결핀
 const int IR_R = A3;  //  적외선센서 우측 핀
@@ -34,7 +49,7 @@ bool ir_left;
 int state = 0;
 
 // 자동차 튜닝 파라미터 =====================================================================
-int detect_ir = 26; // 검출선이 흰색과 검정색 비교
+int detect_ir = 28; // 검출선이 흰색과 검정색 비교
 
 
 int punch_pwm = 200; // 정지 마찰력 극복 출력 (0 ~ 255)
@@ -192,6 +207,32 @@ void SetSensor(){
     uw_right = GetDistance(R_TRIG, R_ECHO);
     ir_left = ir_sensing(IR_L);
     ir_right = ir_sensing(IR_R);
+
+    Serial.print("left: ");
+    Serial.print(uw_left);
+    Serial.print("  right: ");
+    Serial.print(uw_right);
+    Serial.print("  front: ");
+    Serial.println(uw_front);
+    
+
+    // 부드러운 회전 & 노이즈 제거를 위한 코드
+    if(ir_left){
+        ir_count = constrain(ir_count+1, -5, 5);
+    }
+    if(ir_right){
+        ir_count = constrain(ir_count-1, -5, 5);
+    }
+    if(!ir_left && !ir_right){
+        if(ir_count < 0){
+            ir_count++;
+        }
+        else if(ir_count > 0){
+            ir_count--;
+        }
+    }
+
+    
 }
 
 // 센서의 값에 따라서
@@ -200,54 +241,36 @@ void SetSensor(){
 void SetState(){
     state = 0;
 
-    //정지(양쪽 차선 검출)
-    if(ir_sensing(IR_L)==true && ir_sensing(IR_R)==true){
-        state=3;
-    }
-
     //직진(차선 검출 X)
-    if(ir_sensing(IR_L)==false && ir_sensing(IR_R)==false){
+    if(ir_left==false && ir_right==false){
         state=0;
     }
     //좌회전(오른쪽 차선 검출)
-    else if(ir_sensing(IR_L)==false && ir_sensing(IR_R)==true){
+    else if(ir_left==false && ir_right==true){
         state=1;
     }
     //우회전(왼쪽 차선 검출)
-    else if(ir_sensing(IR_L)==true && ir_sensing(IR_R)==false){
+    else if(ir_left==true && ir_right==false){
         state=2;
     }
 }
 
 // 직진에 해당하게끔 스티어링이랑 속도 조정
 void Straight(){
-    compute_steering = 0;
+    compute_steering = ir_count / 5.0;
     compute_speed = 1;
 }
 
 // 좌회전
 void LeftTurn(){
-    compute_steering = -1;
-    compute_speed = 0.8;
+    compute_steering = ir_count / 5.0;
+    compute_speed = 0.7;
 }
 
 // 우회전
 void RightTurn(){
-    compute_steering = 1;
-    compute_speed = 0.8;
-}
-
-void StopLine(){
-    compute_steering = 0;
-    compute_speed = 0;
-    SetSpeed(compute_speed);
-    SetSteering(compute_steering);
-    delay(3000);
-    compute_steering = 0;
-    compute_speed = 1;
-    SetSpeed(compute_speed);
-    SetSteering(compute_steering);
-    delay(200);
+    compute_steering = ir_count / 5.0;
+    compute_speed = 0.7;
 }
 
 // 오른쪽 장애물
@@ -287,13 +310,10 @@ void driving() {
     case 2:
         RightTurn();
         break;
-    case 3:
-        StopLine();
-        break;
     }
 
-    SetSpeed(compute_speed);
-    SetSteering(compute_steering);
+    // SetSpeed(compute_speed);
+    // SetSteering(compute_steering);
 }
 
 
