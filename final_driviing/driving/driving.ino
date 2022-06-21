@@ -246,6 +246,8 @@ void SetSensor(){
     ir_left = ir_sensing(IR_L);
     ir_right = ir_sensing(IR_R);
 
+    int sum = 0;
+
     // 디버깅용 프린트
     // Serial.print("left: ");
     // Serial.print(uw_left);
@@ -271,7 +273,12 @@ void SetSensor(){
 void SetState(){
     state = 0;
 
-    if(uw_front < 230){
+
+    // 정지선
+    if(ir_left == true && ir_left == true){
+
+    }
+    if(uw_front < 270){
         state = 3;
     }
     //직진(차선 검출 X)
@@ -316,6 +323,12 @@ void RightTurn(){
     compute_speed = 0.7;
 }
 
+// 정지선
+
+void StopLine(){
+
+}
+
 
 // 오른쪽 장애물
 void RightObstacle(){
@@ -331,21 +344,50 @@ void LeftObstacle(){
 // 전방 장애물
 // 일단 왼쪽으로 회전
 void FrontObstacle(){
-    while(GetRightDistance(GetDistance(R_TRIG, R_ECHO)) > 100 && !ir_sensing(IR_R)){
+    while(GetRightDistance(GetDistance(R_TRIG, R_ECHO)) > 100 && !ir_sensing(IR_L) && !ir_sensing(IR_R)){
         SetSpeed(0.4);
         SetSteering(-1);
     }
-    compute_speed = 0.4;
-    compute_steering = -1;
-    steering_degree = -1;
+    compute_speed = 0.8;
+    compute_steering = 0;
+}
+
+
+void SideParking(){
+    SetSteering(0.7);
+    SetSpeed(0.5);
+    delay(1000);
+    SetSteering(-1);
+    SetSpeed(0.5);
+    delay(500);
+
+    SetSteering(0);
+    while(GetFrontDistance(GetDistance(FC_TRIG, FC_ECHO)) > 45){
+        continue;
+    }
+    SetSpeed(-1);
+    while(GetFrontDistance(GetDistance(FC_TRIG, FC_ECHO)) < 200){
+        continue;
+    }
+
+    SetSpeed(0.5);
+    SetSteering(-1);
+    delay(1000);
+    SetSpeed(0.5);
+    SetSteering(1);
+    delay(1000);
+    SetSteering(0);
+
 }
 
 void driving() {
 
+    // SideParking();
+
     // 한 번의 루프마다 각각 센서값 설정
     SetSensor();
 
-    // 받아온 센서값을 바탕으로 이번 루프의 state결정
+    받아온 센서값을 바탕으로 이번 루프의 state결정
     SetState();
 
     // case별로 분기 추가하기!
