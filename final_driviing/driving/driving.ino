@@ -4,6 +4,24 @@
 
 using namespace std;
 
+const int FPS = 60;
+
+deque<float> front_check;
+deque<float> left_check;
+deque<float> right_check;
+
+// float SIDE_PARLKING_FRONT[60] = {300,300,300,300,300,300
+//                             ,300,300,300,300,300,300
+//                             ,300,300,300,300,300,300
+//                             ,300,300,300,300,300,300
+//                             ,300,300,300,300,300,300
+//                             ,300,300,300,300,300,300
+//                             ,300,300,300,300,300,300
+//                             ,300,300,300,300,300,300
+//                             ,300,300,300,300,300,300
+//                             ,300,300,300,300,300,300
+// };
+
 Servo servo;
 
 // 노이즈 방지를 위한 센서값 평균을 측정하기 위한 변수와 배열
@@ -240,22 +258,39 @@ void SetSpeed(float speed)
 //센서값 설정
 void SetSensor(){
 
-    uw_front = GetFrontDistance(GetDistance(FC_TRIG, FC_ECHO));
-    uw_left = GetLeftDistance(GetDistance(L_TRIG, L_ECHO));
-    uw_right = GetRightDistance(GetDistance(R_TRIG, R_ECHO));
+    float current_front = GetDistance(FC_TRIG, FC_ECHO);
+    float current_left = GetDistance(FC_TRIG, FC_ECHO);
+    float current_right = GetDistance(FC_TRIG, FC_ECHO);    
+    uw_front = GetFrontDistance(current_front);
+    uw_left = GetLeftDistance(current_left);
+    uw_right = GetRightDistance(current_right);
     ir_left = ir_sensing(IR_L);
     ir_right = ir_sensing(IR_R);
 
-    int sum = 0;
 
-    // 디버깅용 프린트
-    // Serial.print("left: ");
-    // Serial.print(uw_left);
-    // Serial.print("  right: ");
-    // Serial.print(uw_right);
+    // front_check.push_back(current_front);
+    // front_check.pop_front();
+    // left_check.push_back(current_left);
+    // left_check.pop_front();
+    // right_check.push_back(current_right);
+    // right_check.pop_front();
+
+    // Serial.print("front: ");
+    // Serial.print(GetSUMSQ(0));
+    // Serial.print("  left: ");
+    // Serial.print(GetSUMSQ(1));
+    // Serial.print("  front: ");
+    // Serial.println(GetSUMSQ(2));
     
-    Serial.print("  front: ");
-    Serial.println(GetDistance(FC_TRIG, FC_ECHO));
+
+    // // 디버깅용 프린트
+    // // Serial.print("left: ");
+    // // Serial.print(uw_left);
+    // // Serial.print("  right: ");
+    // // Serial.print(uw_right);
+    
+    // Serial.print("  front: ");
+    // Serial.println(GetDistance(FC_TRIG, FC_ECHO));
     
 }
 
@@ -275,10 +310,10 @@ void SetState(){
 
 
     // 정지선
-    if(ir_left == true && ir_left == true){
-
+    if(ir_left == true && ir_right == true){
+        state = 4;
     }
-    if(uw_front < 270){
+    else if(uw_front < 270){
         state = 3;
     }
     //직진(차선 검출 X)
@@ -326,7 +361,16 @@ void RightTurn(){
 // 정지선
 
 void StopLine(){
-
+    compute_steering = 0;
+    compute_speed = 0;
+    SetSpeed(compute_speed);
+    SetSteering(compute_steering);
+    delay(3000);
+    compute_steering = 0;
+    compute_speed = 1;
+    SetSpeed(compute_speed);
+    SetSteering(compute_steering);
+    // delay(200);
 }
 
 
@@ -340,45 +384,76 @@ void LeftObstacle(){
 
 }
 
+// float abs_num(float num){
+//     if(num > 0){
+//       return num;
+//     }
+//     else{
+//       return (-1) * num;
+//     }
+// }
+
+// float GetSUMSQ(int flag){
+//     int SUMSQ = 0;
+//     if(flag == 0){  // front
+//         for(int i = 0; i < FPS; i++){
+//             SUMSQ += abs_num(front_check[i] - SIDE_PARLKING_FRONT[i]);
+//         }
+//     }
+//     else if(flag == 1){ // left
+//         for(int i = 0; i < FPS; i++){
+//             SUMSQ += abs_num(left_check[i] - SIDE_PARLKING_FRONT[i]);
+//         }
+//     }
+//     else{   // right
+//         for(int i = 0; i < FPS; i++){
+//             SUMSQ += abs_num(right_check[i] - SIDE_PARLKING_FRONT[i]);
+//         }
+//     }
+//     return SUMSQ;
+// }
+
 
 // 전방 장애물
 // 일단 왼쪽으로 회전
 void FrontObstacle(){
-    while(GetRightDistance(GetDistance(R_TRIG, R_ECHO)) > 100 && !ir_sensing(IR_L) && !ir_sensing(IR_R)){
+    while(GetRightDistance(GetDistance(R_TRIG, R_ECHO)) > 70 && !ir_sensing(IR_L) && !ir_sensing(IR_R)){
         SetSpeed(0.4);
         SetSteering(-1);
     }
-    compute_speed = 0.8;
+    compute_speed = 0.6;
     compute_steering = 0;
 }
 
 
-void SideParking(){
-    SetSteering(0.7);
-    SetSpeed(0.5);
-    delay(1000);
-    SetSteering(-1);
-    SetSpeed(0.5);
-    delay(500);
 
-    SetSteering(0);
-    while(GetFrontDistance(GetDistance(FC_TRIG, FC_ECHO)) > 45){
-        continue;
-    }
-    SetSpeed(-1);
-    while(GetFrontDistance(GetDistance(FC_TRIG, FC_ECHO)) < 200){
-        continue;
-    }
 
-    SetSpeed(0.5);
-    SetSteering(-1);
-    delay(1000);
-    SetSpeed(0.5);
-    SetSteering(1);
-    delay(1000);
-    SetSteering(0);
+// void SideParking(){
+//     SetSteering(0.7);
+//     SetSpeed(0.5);
+//     delay(1000);
+//     SetSteering(-1);
+//     SetSpeed(0.5);
+//     delay(500);
 
-}
+//     SetSteering(0);
+//     while(GetFrontDistance(GetDistance(FC_TRIG, FC_ECHO)) > 45){
+//         continue;
+//     }
+//     SetSpeed(-1);
+//     while(GetFrontDistance(GetDistance(FC_TRIG, FC_ECHO)) < 200){
+//         continue;
+//     }
+
+//     SetSpeed(0.5);
+//     SetSteering(-1);
+//     delay(1000);
+//     SetSpeed(0.5);
+//     SetSteering(1);
+//     delay(1000);
+//     SetSteering(0);
+
+// }
 
 void driving() {
 
@@ -387,7 +462,7 @@ void driving() {
     // 한 번의 루프마다 각각 센서값 설정
     SetSensor();
 
-    받아온 센서값을 바탕으로 이번 루프의 state결정
+    //받아온 센서값을 바탕으로 이번 루프의 state결정
     SetState();
 
     // case별로 분기 추가하기!
@@ -406,6 +481,8 @@ void driving() {
     case 3:
         FrontObstacle();
         break;
+    case 4:
+        StopLine();
     }
 
     SetSpeed(compute_speed);
@@ -442,6 +519,12 @@ void setup() {
 
     SetSteering(0);
     SetSpeed(0);
+
+//    for(int i = 0; i < FPS; i++){
+//        front_check.push_back(MAX_DISTANCE);
+//        left_check.push_back(MAX_DISTANCE);
+//        right_check.push_back(MAX_DISTANCE);
+//    }
 }
 
 void loop() {
