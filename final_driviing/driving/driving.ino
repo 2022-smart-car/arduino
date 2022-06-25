@@ -80,7 +80,7 @@ int angle_limit = 55; // 서보 모터 회전 제한 각 (단위: 도)
 
 int front_detect = 200; // 전방 감지 거리 (단위: mm)
 int front_start = 160; // 전방 출발 거리 (단위: mm)
-int front_stop = 70; // 전방 멈춤 거리 (단위: mm)
+int front_stop = 100; // 전방 멈춤 거리 (단위: mm)
 
 int side_detect = 95; // 좌우 감지 거리 (단위: mm)
 
@@ -361,7 +361,7 @@ void Detect(){
 }
 
 // 직진에 해당하게끔 스티어링이랑 속도 조정
-void Straight(){
+void Straight(float speed){
     if(steering_degree < 0){
         steering_degree++;
     }
@@ -369,27 +369,35 @@ void Straight(){
         steering_degree--;
     }
     compute_steering = steering_degree / 5.0;
-    compute_speed = 1;
+    compute_speed = speed;
+    SetSpeed(compute_speed);
+    SetSteering(compute_steering);
 }
 
 //후진
-void Back(){
+void Back(float speed){
     compute_steering = 0;
-    compute_speed = 0.6;
+    compute_speed = speed;
+    SetSpeed(compute_speed);
+    SetSteering(compute_steering);
 }
 
 // 좌회전
-void LeftTurn(){
+void LeftTurn(float speed){
     steering_degree = constrain(steering_degree-1, -5, 5);
     compute_steering = steering_degree / 5.0;
-    compute_speed = 0.7;
+    compute_speed = speed;
+    SetSpeed(compute_speed);
+    SetSteering(compute_steering);
 }
 
 // 우회전
-void RightTurn(){
+void RightTurn(float speed){
     steering_degree = constrain(steering_degree+1, -5, 5);
     compute_steering = steering_degree / 5.0;
-    compute_speed = 0.7;
+    compute_speed = speed;
+    SetSpeed(compute_speed);
+    SetSteering(compute_steering);
 }
 
 // 정지선
@@ -400,7 +408,7 @@ void StopLine(){
     SetSteering(compute_steering);
     delay(3000);
     compute_steering = 0;
-    compute_speed = 1;
+    compute_speed = 0.3;
     SetSpeed(compute_speed);
     SetSteering(compute_steering);
 
@@ -412,8 +420,6 @@ void StopLine(){
 
 //평행주차
 void ParallelPark(){
-    int check_first=1;
-
     while(1){
         SetSensor();
         if(uw_front>front_start && uw_left>side_detect && uw_right>side_detect)
@@ -426,26 +432,20 @@ void ParallelPark(){
         // }
 
         if(uw_left<side_detect && uw_right>side_detect){
-            Back();
-            SetSpeed(compute_speed);
-            SetSteering(compute_steering);
-            delay(1000);
+            // Back(-0.1);
+            // delay(1000);
             
             while(1){
                 SetSensor();
-                if(uw_right<side_detect || uw_front<front_stop)
+                if(GetDistance(R_TRIG, R_ECHO)<side_detect || GetDistance(FC_TRIG, FC_ECHO)<front_stop)
                     break;
-                RightTurn();
-                SetSpeed(compute_speed-0.4);
-                SetSteering(compute_steering);
+                RightTurn(0.05);
             }
             while(1){
                 SetSensor();
-                if(uw_front>front_stop)
+                if(GetDistance(R_TRIG, R_ECHO)<side_detect+5 && GetDistance(FC_TRIG, FC_ECHO)>front_stop)
                     break;
-                LeftTurn();
-                SetSpeed(compute_speed-0.4);
-                SetSteering(compute_steering);
+                LeftTurn(0.05);
             }
             // while(1){
             //     SetSensor();
@@ -466,9 +466,7 @@ void ParallelPark(){
         //     compute_steering = 0;    
 
         // }
-        Straight();
-        SetSpeed(compute_speed);
-        SetSteering(compute_steering);
+        Straight(0.3);
     }
 }
 
@@ -571,13 +569,13 @@ void driving() {
     // switch (state)
     // {
     // case 0:
-    //     Straight();
+    //     Straight(1);
     //     break;
     // case 1:
-    //     LeftTurn();
+    //     LeftTurn(0.7);
     //     break;
     // case 2:
-    //     RightTurn();
+    //     RightTurn(0.7);
     //     break;
     // case 3:
     //     FrontObstacle();
@@ -587,8 +585,6 @@ void driving() {
     //     break;
     // }
 
-    // SetSpeed(compute_speed);
-    // SetSteering(compute_steering);
 }
 
 
