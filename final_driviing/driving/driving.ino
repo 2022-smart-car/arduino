@@ -10,6 +10,10 @@ deque<float> front_check;
 deque<float> left_check;
 deque<float> right_check;
 
+int ir_left_check = 0;
+int ir_right_check = 0;
+
+
 // float SIDE_PARLKING_FRONT[60] = {300,300,300,300,300,300
 //                             ,300,300,300,300,300,300
 //                             ,300,300,300,300,300,300
@@ -78,7 +82,7 @@ int min_ai_pwm = 70; // 자율주행 모터 최소 출력 (0 ~ 255)
 int angle_offset = 0; // 서보 모터 중앙각 오프셋 (단위: 도)
 int angle_limit = 55; // 서보 모터 회전 제한 각 (단위: 도)
 
-int front_detect = 200; // 전방 감지 거리 (단위: mm)
+int front_detect = 280; // 전방 감지 거리 (단위: mm)
 int front_start = 160; // 전방 출발 거리 (단위: mm)
 int front_stop = 100; // 전방 멈춤 거리 (단위: mm)
 
@@ -150,9 +154,9 @@ float GetRightDistance(float current){
 
 bool ir_sensing(int pin) {
     if(analogRead(pin)>detect_ir)
-      return false;
+        return false;
     else
-      return true;
+        return true;
 }
 
 // 앞바퀴 조향
@@ -289,10 +293,11 @@ void SetSensor(){
     // // Serial.print("  right: ");
     // // Serial.print(uw_right);
     // 디버깅용 프린트
-    Serial.print("left: ");
-    Serial.print(uw_left);
-    Serial.print("  right: ");
-    Serial.println(uw_right);
+    // Serial.print("left: ");
+    // Serial.print(uw_left);
+    // Serial.print("  right: ");
+    // Serial.println(uw_right);
+    Serial.println(uw_front);
     
     // Serial.print("  front: ");
     // Serial.println(GetDistance(FC_TRIG, FC_ECHO));
@@ -313,51 +318,63 @@ void SetSensor(){
 void SetState(){
     state = 0;
 
-    // 정지선
-    if(ir_left == true && ir_right == true){
+    bool stop_flag = true;
+    for(int i = 0; i < 5; i++){
+        if(ir_left == false || ir_right == false){
+            stop_flag = false;
+            break;
+        }
+    }
+    if(stop_flag){
         state = 4;
     }
-    // else if(uw_front < 270){
-    //     state = 3;
-    // }
-    //직진(차선 검출 X)
-    else if(ir_left==false && ir_right==false){
-        state=0;
+    else{
+        if(uw_front < front_detect){
+            FrontObstacle();
+        }
+        //직진
+        else if(ir_left==false && ir_right==false){
+            state=0;
+        }
+        //좌회전(오른쪽 차선 검출)
+        else if(ir_left==false && ir_right==true){
+            state=1;
+        }
+        //우회전(왼쪽 차선 검출)
+        else if(ir_left==true && ir_right==false){
+            state=2;
+        } 
     }
-    //좌회전(오른쪽 차선 검출)
-    else if(ir_left==false && ir_right==true){
-        state=1;
-    }
-    //우회전(왼쪽 차선 검출)
-    else if(ir_left==true && ir_right==false){
-        state=2;
-    }
+
 
 
 }
 
 //정지선이 감지되었을 때만 호출
 void Detect(){
-    //기본 주행 모드
-    if(uw_left>side_detect && uw_right>side_detect){
+    
+    bool left = uw_left < side_detect;
+    bool right = uw_right < side_detect;
+    bool front = uw_front < front_detect;
+
+    // 기본주행모드 앞과 옆에 모두 감지되지않음
+    if(!left && !right && !front){
+      
+    }
+    // 평행주차모드 양옆만 막혀있음
+    if(left && right && !front){
 
     }
-    //평행주차 모드
-    else if(uw_front>front_start && uw_left<side_detect && uw_right<side_detect){
-        // ParallelPark();
-    }
-    //후방주차 && 회피주행
-    else if(uw_front<front_stop){
-        //후방주차
-        if(uw_left<side_detect && uw_right<side_detect){
+    // 후방주차모드 양옆, 앞 모두 막혀있음
+    if(left && right && front){
 
-        }
-        //회피주행
-        else{
-            // 장애물 만나면 좌회전
-                
-            }
-        }
+    }
+    // 회피주행모드
+    if(!left && !right && front){
+        FrontObstacle();
+    }
+
+
     }
 
 
@@ -409,14 +426,16 @@ void StopLine(){
     SetSpeed(compute_speed);
     SetSteering(compute_steering);
     delay(3000);
+    for(int i = 0; i < 3; i++){
+        SetSensor();
+    }
     compute_steering = 0;
     compute_speed = 0.3;
     SetSpeed(compute_speed);
     SetSteering(compute_steering);
 
-//    Detect();
+    Detect();
 
-    // delay(200);
 }
 
 
@@ -573,28 +592,28 @@ void driving() {
     // // 한 번의 루프마다 각각 센서값 설정
     SetSensor();
 
-    FrontObstacle();
+    SetState();
 
     // case별로 분기 추가하기!
     // case 별로 상수 DEFINE 해서 숫자 없애기!
-    // switch (state)
-    // {
-    // case 0:
-    //     Straight(1);
-    //     break;
-    // case 1:
-    //     LeftTurn(0.7);
-    //     break;
-    // case 2:
-    //     RightTurn(0.7);
-    //     break;
+    switch (state)
+    {
+    case 0:
+        Straight(1);
+        break;
+    case 1:
+        LeftTurn(0.7);
+        break;
+    case 2:
+        RightTurn(0.7);
+        break;
     // case 3:
     //     FrontObstacle();
     //     break;
-    // case 4:
-    //     StopLine();
-    //     break;
-    // }
+    case 4:
+        StopLine();
+        break;
+    }
 
 }
 
