@@ -523,10 +523,10 @@ void FrontObstacle(){
     }
     while(uw_right < 300){
         SetSensor();
-        if(uw_right < 140){
+        if(uw_right < 100){
             LeftTurn(0.2);
         }
-        else if(uw_right > 160){
+        else if(uw_right > 140){
             RightTurn(0.2);
         }
         else{
