@@ -80,9 +80,9 @@ int angle_limit = 55; // 서보 모터 회전 제한 각 (단위: 도)
 
 int front_detect = 200; // 전방 감지 거리 (단위: mm)
 int front_start = 160; // 전방 출발 거리 (단위: mm)
-int front_stop = 70; // 전방 멈춤 거리 (단위: mm)
+int front_stop = 100; // 전방 멈춤 거리 (단위: mm)
 
-int side_detect = 100; // 좌우 감지 거리 (단위: mm)
+int side_detect = 95; // 좌우 감지 거리 (단위: mm)
 
 
 float cur_steering;
@@ -317,9 +317,9 @@ void SetState(){
     if(ir_left == true && ir_right == true){
         state = 4;
     }
-    else if(uw_front < 270){
-        state = 3;
-    }
+    // else if(uw_front < 270){
+    //     state = 3;
+    // }
     //직진(차선 검출 X)
     else if(ir_left==false && ir_right==false){
         state=0;
@@ -344,7 +344,7 @@ void Detect(){
     }
     //평행주차 모드
     else if(uw_front>front_start && uw_left<side_detect && uw_right<side_detect){
-        
+        // ParallelPark();
     }
     //후방주차 && 회피주행
     else if(uw_front<front_stop){
@@ -355,28 +355,15 @@ void Detect(){
         //회피주행
         else{
             // 장애물 만나면 좌회전
-            while(GetDistance(R_TRIG, R_ECHO) > 100){
-                LeftTurn();
-            }
-            while(GetDistance(R_TRIG, R_ECHO) < 200){
-                SetSensor();
-                if(uw_right < 100){
-                    LeftTurn();
-                }
-                else if(uw_left > 150){
-                    RightTurn();
-                }
-                SetSteering(compute_steering);
-                SetSpeed(compute_speed);
                 
             }
         }
     }
 
-}
+
 
 // 직진에 해당하게끔 스티어링이랑 속도 조정
-void Straight(){
+void Straight(float speed){
     if(steering_degree < 0){
         steering_degree++;
     }
@@ -384,25 +371,38 @@ void Straight(){
         steering_degree--;
     }
     compute_steering = steering_degree / 5.0;
-    compute_speed = 1;
+    compute_speed = speed;
+    SetSpeed(compute_speed);
+    SetSteering(compute_steering);
+}
+
+//후진
+void Back(float speed){
+    compute_steering = 0;
+    compute_speed = speed;
+    SetSpeed(compute_speed);
+    SetSteering(compute_steering);
 }
 
 // 좌회전
-void LeftTurn(){
+void LeftTurn(float speed){
     steering_degree = constrain(steering_degree-1, -5, 5);
     compute_steering = steering_degree / 5.0;
-    compute_speed = 0.7;
+    compute_speed = speed;
+    SetSpeed(compute_speed);
+    SetSteering(compute_steering);
 }
 
 // 우회전
-void RightTurn(){
+void RightTurn(float speed){
     steering_degree = constrain(steering_degree+1, -5, 5);
     compute_steering = steering_degree / 5.0;
-    compute_speed = 0.7;
+    compute_speed = speed;
+    SetSpeed(compute_speed);
+    SetSteering(compute_steering);
 }
 
 // 정지선
-
 void StopLine(){
     compute_steering = 0;
     compute_speed = 0;
@@ -410,13 +410,66 @@ void StopLine(){
     SetSteering(compute_steering);
     delay(3000);
     compute_steering = 0;
-    compute_speed = 1;
+    compute_speed = 0.3;
     SetSpeed(compute_speed);
     SetSteering(compute_steering);
 
 //    Detect();
 
     // delay(200);
+}
+
+
+//평행주차
+void ParallelPark(){
+    while(1){
+        SetSensor();
+        if(uw_front>front_start && uw_left>side_detect && uw_right>side_detect)
+            break;
+
+        // if(uw_left>side_detect || uw_right){
+        //     compute_speed = -1;
+        //     compute_steering = 0;    
+
+        // }
+
+        if(uw_left<side_detect && uw_right>side_detect){
+            // Back(-0.1);
+            // delay(1000);
+            
+            while(1){
+                SetSensor();
+                if(GetDistance(R_TRIG, R_ECHO)<side_detect || GetDistance(FC_TRIG, FC_ECHO)<front_stop)
+                    break;
+                RightTurn(0.05);
+            }
+            while(1){
+                SetSensor();
+                if(GetDistance(R_TRIG, R_ECHO)<side_detect+5 && GetDistance(FC_TRIG, FC_ECHO)>front_stop)
+                    break;
+                LeftTurn(0.05);
+            }
+            // while(1){
+            //     SetSensor();
+            //     if(uw_front>front_stop)
+            //         break;
+            //     LeftTurn();
+            //     SetSpeed(compute_speed-0.4);
+            //     SetSteering(compute_steering);
+            // }
+        }
+
+        // while(1){
+        //     if(uw_left<side_detect && uw_right>side_detect){
+        //     }
+        // }
+        // if(uw_left<side_detect && uw_right>side_detect){
+        //     compute_speed = -1;
+        //     compute_steering = 0;    
+
+        // }
+        Straight(0.3);
+    }
 }
 
 
@@ -463,12 +516,23 @@ void LeftObstacle(){
 // 전방 장애물
 // 일단 왼쪽으로 회전
 void FrontObstacle(){
-    while(GetRightDistance(GetDistance(R_TRIG, R_ECHO)) > 70 && !ir_sensing(IR_L) && !ir_sensing(IR_R)){
-        SetSpeed(0.4);
-        SetSteering(-1);
+    SetSensor();
+    while(uw_front < 300){
+        SetSensor();
+        LeftTurn(0.2);
     }
-    compute_speed = 0.6;
-    compute_steering = 0;
+    while(uw_right < 300){
+        SetSensor();
+        if(uw_right < 140){
+            LeftTurn(0.2);
+        }
+        else if(uw_right > 160){
+            RightTurn(0.2);
+        }
+        else{
+            Straight(0.2);
+        }
+    }
 }
 
 
@@ -509,40 +573,20 @@ void driving() {
     // // 한 번의 루프마다 각각 센서값 설정
     SetSensor();
 
-    SetSteering(-1);
-    SetSpeed(0.2);
+    FrontObstacle();
 
-    delay(1000);
-
-    while(GetDistance(R_TRIG, R_ECHO) < 250){
-        SetSensor();
-        if(uw_right < 120){
-            LeftTurn();
-        }
-        else if(uw_right > 130){
-            RightTurn();
-        }
-        SetSteering(compute_steering);
-        SetSpeed(compute_speed - 0.6);
-    }
-    
-
-        
-    // //받아온 센서값을 바탕으로 이번 루프의 state결정
-    // SetState();
-
-    // // case별로 분기 추가하기!
-    // // case 별로 상수 DEFINE 해서 숫자 없애기!
+    // case별로 분기 추가하기!
+    // case 별로 상수 DEFINE 해서 숫자 없애기!
     // switch (state)
     // {
     // case 0:
-    //     Straight();
+    //     Straight(1);
     //     break;
     // case 1:
-    //     LeftTurn();
+    //     LeftTurn(0.7);
     //     break;
     // case 2:
-    //     RightTurn();
+    //     RightTurn(0.7);
     //     break;
     // case 3:
     //     FrontObstacle();
@@ -552,8 +596,6 @@ void driving() {
     //     break;
     // }
 
-    // SetSpeed(compute_speed);
-    // SetSteering(compute_steering);
 }
 
 
