@@ -437,24 +437,32 @@ void ParallelPark(){
             
             while(1){
                 SetSensor();
-                if(GetDistance(R_TRIG, R_ECHO)<side_detect || GetDistance(FC_TRIG, FC_ECHO)<front_stop)
+                if(uw_right<side_detect || uw_front<front_detect)
                     break;
                 RightTurn(0.05);
             }
             while(1){
                 SetSensor();
-                if(GetDistance(R_TRIG, R_ECHO)<side_detect+5 && GetDistance(FC_TRIG, FC_ECHO)>front_stop)
+                if(uw_right<side_detect+5 && uw_front>front_stop)
                     break;
                 LeftTurn(0.05);
             }
-            // while(1){
-            //     SetSensor();
-            //     if(uw_front>front_stop)
-            //         break;
-            //     LeftTurn();
-            //     SetSpeed(compute_speed-0.4);
-            //     SetSteering(compute_steering);
-            // }
+        }
+        else if(uw_front < front_stop){
+            while(1){
+                SetSensor();
+                if(uw_front>front_start)
+                    break;
+                Back(-0.05);
+            }
+            while(1){
+                SetSensor();
+                if(uw_left<side_detect)
+                    break;
+                LeftTurn(0.05);
+            }
+        }
+        else if(uw_left<side_detect && uw_right>side_detect){
         }
 
         // while(1){
