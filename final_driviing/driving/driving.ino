@@ -63,6 +63,7 @@ bool ir_left;
 
 
 int state = 0;
+int check_start = 1;
 
 // 자동차 튜닝 파라미터 =====================================================================
 int detect_ir = 28; // 검출선이 흰색과 검정색 비교
@@ -282,20 +283,13 @@ void SetSensor(){
     // Serial.print("  front: ");
     // Serial.println(GetSUMSQ(2));
     
-
-    // // 디버깅용 프린트
-    // // Serial.print("left: ");
-    // // Serial.print(uw_left);
-    // // Serial.print("  right: ");
-    // // Serial.print(uw_right);
     // 디버깅용 프린트
-    Serial.print("left: ");
-    Serial.print(uw_left);
-    Serial.print("  right: ");
-    Serial.print(uw_right);
-    
+    // Serial.print("left: ");
+    // Serial.println(uw_left);
+    // Serial.print("  right: ");
+    // Serial.println(uw_right);    
     // Serial.print("  front: ");
-    // Serial.println(GetDistance(FC_TRIG, FC_ECHO));
+    // Serial.println(uw_front);
     
 }
 
@@ -425,45 +419,60 @@ void ParallelPark(){
         if(uw_front>front_start && uw_left>side_detect && uw_right>side_detect)
             break;
 
-        // if(uw_left>side_detect || uw_right){
-        //     compute_speed = -1;
-        //     compute_steering = 0;    
+        // if(uw_left<side_detect && uw_right>side_detect && check_start==1){
+        //     Serial.println("1");
+        //     check_start--;
+        // }
 
+        // if(uw_left<side_detect && uw_right<side_detect && check_start==0){
+        //     while(1){
+        //         Serial.println("2");                
+        //         SetSensor();
+        //         if(uw_front>front_detect)
+        //             break;
+        //         RightTurn(-0.05);
+        //     }
+        //     Serial.println("3");
         // }
 
         if(uw_left<side_detect && uw_right>side_detect){
             // Back(-0.1);
             // delay(1000);
             
+            RightTurn(0.05);
+            delay(3000);
+            // while(1){
+            //     // Serial.print("1\n");
+            //     SetSensor();
+            //     if(uw_right<150)
+            //         break;
+            //     RightTurn(0.05);
+            // }
             while(1){
+                // Serial.print("2\n");
                 SetSensor();
-                if(uw_right<side_detect || uw_front<front_detect)
-                    break;
-                RightTurn(0.05);
-            }
-            while(1){
-                SetSensor();
-                if(uw_right<side_detect+5 && uw_front>front_stop)
-                    break;
-                LeftTurn(0.05);
-            }
-        }
-        else if(uw_front < front_stop){
-            while(1){
-                SetSensor();
-                if(uw_front>front_start)
-                    break;
-                Back(-0.05);
-            }
-            while(1){
-                SetSensor();
-                if(uw_left<side_detect)
+                if(uw_right<side_detect+5 && uw_front<front_stop)
                     break;
                 LeftTurn(0.05);
             }
         }
-        else if(uw_left<side_detect && uw_right>side_detect){
-        }
+
+        // else if(uw_front < front_stop){
+        //     while(1){
+        //         SetSensor();
+        //         if(uw_front>front_start)
+        //             break;
+        //         Back(-0.05);
+        //     }
+        //     while(1){
+        //         SetSensor();
+        //         if(uw_left<side_detect)
+        //             break;
+        //         LeftTurn(0.05);
+        //     }
+        // }
+        // else if(uw_left<side_detect && uw_right>side_detect){
+        // }
 
         // while(1){
         //     if(uw_left<side_detect && uw_right>side_detect){
