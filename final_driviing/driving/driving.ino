@@ -259,8 +259,8 @@ void SetSpeed(float speed)
 void SetSensor(){
 
     float current_front = GetDistance(FC_TRIG, FC_ECHO);
-    float current_left = GetDistance(FC_TRIG, FC_ECHO);
-    float current_right = GetDistance(FC_TRIG, FC_ECHO);    
+    float current_left = GetDistance(L_TRIG, L_ECHO);
+    float current_right = GetDistance(R_TRIG, R_ECHO);    
     uw_front = GetFrontDistance(current_front);
     uw_left = GetLeftDistance(current_left);
     uw_right = GetRightDistance(current_right);
@@ -292,7 +292,7 @@ void SetSensor(){
     Serial.print("left: ");
     Serial.print(uw_left);
     Serial.print("  right: ");
-    Serial.print(uw_right);
+    Serial.println(uw_right);
     
     // Serial.print("  front: ");
     // Serial.println(GetDistance(FC_TRIG, FC_ECHO));
@@ -354,7 +354,22 @@ void Detect(){
         }
         //회피주행
         else{
-
+            // 장애물 만나면 좌회전
+            while(GetDistance(R_TRIG, R_ECHO) > 100){
+                LeftTurn();
+            }
+            while(GetDistance(R_TRIG, R_ECHO) < 200){
+                SetSensor();
+                if(uw_right < 100){
+                    LeftTurn();
+                }
+                else if(uw_left > 150){
+                    RightTurn();
+                }
+                SetSteering(compute_steering);
+                SetSpeed(compute_speed);
+                
+            }
         }
     }
 
@@ -399,7 +414,7 @@ void StopLine(){
     SetSpeed(compute_speed);
     SetSteering(compute_steering);
 
-    Detect();
+//    Detect();
 
     // delay(200);
 }
@@ -487,38 +502,58 @@ void FrontObstacle(){
 // }
 
 void driving() {
+    
 
-    // SideParking();
+    // // SideParking();
 
-    // 한 번의 루프마다 각각 센서값 설정
+    // // 한 번의 루프마다 각각 센서값 설정
     SetSensor();
 
-    //받아온 센서값을 바탕으로 이번 루프의 state결정
-    SetState();
+    SetSteering(-1);
+    SetSpeed(0.5);
 
-    // case별로 분기 추가하기!
-    // case 별로 상수 DEFINE 해서 숫자 없애기!
-    switch (state)
-    {
-    case 0:
-        Straight();
-        break;
-    case 1:
-        LeftTurn();
-        break;
-    case 2:
-        RightTurn();
-        break;
-    case 3:
-        FrontObstacle();
-        break;
-    case 4:
-        StopLine();
-        break;
+    delay(2000);
+
+    while(GetDistance(R_TRIG, R_ECHO) < 200){
+        SetSensor();
+        if(uw_right < 120){
+            LeftTurn();
+        }
+        else if(uw_right > 130){
+            RightTurn();
+        }
+        SetSteering(compute_steering);
+        SetSpeed(compute_speed - 0.4);
     }
+    
 
-    SetSpeed(compute_speed);
-    SetSteering(compute_steering);
+        
+    // //받아온 센서값을 바탕으로 이번 루프의 state결정
+    // SetState();
+
+    // // case별로 분기 추가하기!
+    // // case 별로 상수 DEFINE 해서 숫자 없애기!
+    // switch (state)
+    // {
+    // case 0:
+    //     Straight();
+    //     break;
+    // case 1:
+    //     LeftTurn();
+    //     break;
+    // case 2:
+    //     RightTurn();
+    //     break;
+    // case 3:
+    //     FrontObstacle();
+    //     break;
+    // case 4:
+    //     StopLine();
+    //     break;
+    // }
+
+    // SetSpeed(compute_speed);
+    // SetSteering(compute_steering);
 }
 
 
