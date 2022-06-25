@@ -99,7 +99,7 @@ float QueueSum(deque<float> Q){
     return sum;
 }
 
-// 이전 5프레임의 초음파센서값을 평균내서 반환한다
+// 이전 3프레임의 초음파센서값을 평균내서 반환한다
 float GetFrontDistance(float current){
     if(front_queue.size() < 3){
         front_queue.push_back(current);
@@ -249,10 +249,10 @@ void SetSensor(){
     int sum = 0;
 
     // 디버깅용 프린트
-    // Serial.print("left: ");
-    // Serial.print(uw_left);
-    // Serial.print("  right: ");
-    // Serial.print(uw_right);
+    Serial.print("left: ");
+    Serial.print(uw_left);
+    Serial.print("  right: ");
+    Serial.print(uw_right);
     
     Serial.print("  front: ");
     Serial.println(GetDistance(FC_TRIG, FC_ECHO));
@@ -273,10 +273,9 @@ void SetSensor(){
 void SetState(){
     state = 0;
 
-
     // 정지선
-    if(ir_left == true && ir_left == true){
-
+    if(ir_left == true && ir_right == true){
+        state=4;
     }
     if(uw_front < 270){
         state = 3;
@@ -294,6 +293,30 @@ void SetState(){
         state=2;
     }
 
+
+}
+
+//정지선이 감지되었을 때만 호출
+void Detect(){
+    //기본 주행 모드
+    if(uw_left>side_detect && uw_right>side_detect){
+
+    }
+    //평행주차 모드
+    else if(uw_front>front_start && uw_left<side_detect && uw_right<side_detect){
+        
+    }
+    //후방주차 && 회피주행
+    else if(uw_front<front_stop){
+        //후방주차
+        if(uw_left<side_detect && uw_right<side_detect){
+
+        }
+        //회피주행
+        else{
+
+        }
+    }
 
 }
 
@@ -326,7 +349,20 @@ void RightTurn(){
 // 정지선
 
 void StopLine(){
+    compute_steering = 0;
+    compute_speed = 0;
+    SetSpeed(compute_speed);
+    SetSteering(compute_steering);
+    delay(3000);
 
+    compute_steering = 0;
+    compute_speed = 1;
+    SetSpeed(compute_speed);
+    SetSteering(compute_steering);
+
+    Detect();
+
+    // delay(200);
 }
 
 
@@ -387,7 +423,7 @@ void driving() {
     // 한 번의 루프마다 각각 센서값 설정
     SetSensor();
 
-    받아온 센서값을 바탕으로 이번 루프의 state결정
+    //받아온 센서값을 바탕으로 이번 루프의 state결정
     SetState();
 
     // case별로 분기 추가하기!
@@ -405,6 +441,9 @@ void driving() {
         break;
     case 3:
         FrontObstacle();
+        break;
+    case 4:
+        StopLine();
         break;
     }
 

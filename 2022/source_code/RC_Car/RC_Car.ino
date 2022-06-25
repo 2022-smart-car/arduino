@@ -179,29 +179,29 @@ void driving() {
 //        SetSteering(i*a);
 //        delay(15);
 //    }
-    compute_steering = cur_steering;
-    compute_speed = cur_speed;
-
-    center = GetDistance(FC_TRIG, FC_ECHO);
-    left = GetDistance(L_TRIG, L_ECHO);
-    right = GetDistance(R_TRIG, R_ECHO);
-
-    if (state == 0) {
-        straight();
-        /* 예시
-            if (ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir) { //양쪽 차선이 검출된 경우
-             state = 2;
-            }
-            if (left <= side_detect && right <= side_detect) {
-             state = 1;
-            }
-            if (center <= center_detect) {
-             state = 3;
-            }*/
-    }
-    SetSpeed(compute_speed);
-    SetSteering(compute_steering);
-//    delay(300);
+//    compute_steering = cur_steering;
+//    compute_speed = cur_speed;
+//
+//    center = GetDistance(FC_TRIG, FC_ECHO);
+//    left = GetDistance(L_TRIG, L_ECHO);
+//    right = GetDistance(R_TRIG, R_ECHO);
+//
+//    if (state == 0) {
+//        straight();
+//        /* 예시
+//            if (ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir) { //양쪽 차선이 검출된 경우
+//             state = 2;
+//            }
+//            if (left <= side_detect && right <= side_detect) {
+//             state = 1;
+//            }
+//            if (center <= center_detect) {
+//             state = 3;
+//            }*/
+//    }
+      SetSpeed(1);
+      SetSteering(-1);
+      delay(20);
 }
 
 void straight() { // 기본주행    
