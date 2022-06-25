@@ -82,7 +82,7 @@ int front_detect = 200; // 전방 감지 거리 (단위: mm)
 int front_start = 160; // 전방 출발 거리 (단위: mm)
 int front_stop = 70; // 전방 멈춤 거리 (단위: mm)
 
-int side_detect = 100; // 좌우 감지 거리 (단위: mm)
+int side_detect = 95; // 좌우 감지 거리 (단위: mm)
 
 
 float cur_steering;
@@ -259,8 +259,8 @@ void SetSpeed(float speed)
 void SetSensor(){
 
     float current_front = GetDistance(FC_TRIG, FC_ECHO);
-    float current_left = GetDistance(FC_TRIG, FC_ECHO);
-    float current_right = GetDistance(FC_TRIG, FC_ECHO);    
+    float current_left = GetDistance(L_TRIG, L_ECHO);
+    float current_right = GetDistance(R_TRIG, R_ECHO);    
     uw_front = GetFrontDistance(current_front);
     uw_left = GetLeftDistance(current_left);
     uw_right = GetRightDistance(current_right);
@@ -317,9 +317,9 @@ void SetState(){
     if(ir_left == true && ir_right == true){
         state = 4;
     }
-    else if(uw_front < 270){
-        state = 3;
-    }
+    // else if(uw_front < 270){
+    //     state = 3;
+    // }
     //직진(차선 검출 X)
     else if(ir_left==false && ir_right==false){
         state=0;
@@ -344,7 +344,7 @@ void Detect(){
     }
     //평행주차 모드
     else if(uw_front>front_start && uw_left<side_detect && uw_right<side_detect){
-        
+        ParallelPark();
     }
     //후방주차 && 회피주행
     else if(uw_front<front_stop){
@@ -372,6 +372,12 @@ void Straight(){
     compute_speed = 1;
 }
 
+//후진
+void Back(){
+    compute_steering = 0;
+    compute_speed = 0.6;
+}
+
 // 좌회전
 void LeftTurn(){
     steering_degree = constrain(steering_degree-1, -5, 5);
@@ -387,7 +393,6 @@ void RightTurn(){
 }
 
 // 정지선
-
 void StopLine(){
     compute_steering = 0;
     compute_speed = 0;
@@ -402,6 +407,69 @@ void StopLine(){
     Detect();
 
     // delay(200);
+}
+
+
+//평행주차
+void ParallelPark(){
+    int check_first=1;
+
+    while(1){
+        SetSensor();
+        if(uw_front>front_start && uw_left>side_detect && uw_right>side_detect)
+            break;
+
+        // if(uw_left>side_detect || uw_right){
+        //     compute_speed = -1;
+        //     compute_steering = 0;    
+
+        // }
+
+        if(uw_left<side_detect && uw_right>side_detect){
+            Back();
+            SetSpeed(compute_speed);
+            SetSteering(compute_steering);
+            delay(1000);
+            
+            while(1){
+                SetSensor();
+                if(uw_right<side_detect || uw_front<front_stop)
+                    break;
+                RightTurn();
+                SetSpeed(compute_speed-0.4);
+                SetSteering(compute_steering);
+            }
+            while(1){
+                SetSensor();
+                if(uw_front>front_stop)
+                    break;
+                LeftTurn();
+                SetSpeed(compute_speed-0.4);
+                SetSteering(compute_steering);
+            }
+            // while(1){
+            //     SetSensor();
+            //     if(uw_front>front_stop)
+            //         break;
+            //     LeftTurn();
+            //     SetSpeed(compute_speed-0.4);
+            //     SetSteering(compute_steering);
+            // }
+        }
+
+        // while(1){
+        //     if(uw_left<side_detect && uw_right>side_detect){
+        //     }
+        // }
+        // if(uw_left<side_detect && uw_right>side_detect){
+        //     compute_speed = -1;
+        //     compute_steering = 0;    
+
+        // }
+        Straight();
+        SetSpeed(compute_speed);
+        SetSteering(compute_steering);
+    }
 }
 
 
@@ -496,29 +564,31 @@ void driving() {
     //받아온 센서값을 바탕으로 이번 루프의 state결정
     SetState();
 
+    ParallelPark();
+
     // case별로 분기 추가하기!
     // case 별로 상수 DEFINE 해서 숫자 없애기!
-    switch (state)
-    {
-    case 0:
-        Straight();
-        break;
-    case 1:
-        LeftTurn();
-        break;
-    case 2:
-        RightTurn();
-        break;
-    case 3:
-        FrontObstacle();
-        break;
-    case 4:
-        StopLine();
-        break;
-    }
+    // switch (state)
+    // {
+    // case 0:
+    //     Straight();
+    //     break;
+    // case 1:
+    //     LeftTurn();
+    //     break;
+    // case 2:
+    //     RightTurn();
+    //     break;
+    // case 3:
+    //     FrontObstacle();
+    //     break;
+    // case 4:
+    //     StopLine();
+    //     break;
+    // }
 
-    SetSpeed(compute_speed);
-    SetSteering(compute_steering);
+    // SetSpeed(compute_speed);
+    // SetSteering(compute_steering);
 }
 
 
