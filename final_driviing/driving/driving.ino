@@ -510,11 +510,11 @@ void driving() {
     SetSensor();
 
     SetSteering(-1);
-    SetSpeed(0.5);
+    SetSpeed(0.2);
 
-    delay(2000);
+    delay(1000);
 
-    while(GetDistance(R_TRIG, R_ECHO) < 200){
+    while(GetDistance(R_TRIG, R_ECHO) < 250){
         SetSensor();
         if(uw_right < 120){
             LeftTurn();
@@ -523,7 +523,7 @@ void driving() {
             RightTurn();
         }
         SetSteering(compute_steering);
-        SetSpeed(compute_speed - 0.4);
+        SetSpeed(compute_speed - 0.6);
     }
     
 
